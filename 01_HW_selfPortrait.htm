@@ -1,0 +1,70 @@
+<!doctype HTML>
+
+<html>
+
+  <head>
+
+    <meta charset = "iso-8859-7">
+    <meta title = "[Live Web] HW 01">
+
+<!--       inline JavaScript        -->
+    <script type = "text/javascript">
+
+      var prompt = [];
+      var promptGate = false;
+      var caos = ["it's ok, just stop it now.", "you know you shouldn't do this.",
+    "ugh, this is so tiring.", "really, you shouldn't do this to yourself.",
+    "you will never chill, will you?", "you're really not going anywhere with this.",
+    "BREATHE.", "WILL YOU JUST BREATHE PLEASE?????", "WHY CAN'T YOU JUST BREATHE?????",
+    "did you try anything more active?", "you really have to do yoga."];
+      var cont = 0;
+      var iVid = [
+        "https://www.youtube.com/embed/JJYC1YqLkXs",
+        "https://www.youtube.com/embed/dcCOAcoUewM",
+        "https://www.youtube.com/embed/QBly8kFKMNY",
+        "https://www.youtube.com/embed/vdIfP6-urIg",
+        "https://www.youtube.com/embed/M7KDXyKFU-E",
+        "https://www.youtube.com/embed/Ns6KcF2mnGo",
+        "https://www.youtube.com/embed/8pUiK-dyPjg",
+        "https://www.youtube.com/embed/dniQ2tIkzeo",
+        "https://www.youtube.com/embed/e6JSjJlGOkY",
+        "https://www.youtube.com/embed/eMDdnlLxgNk",
+        "https://www.youtube.com/embed/SnAiSqkNPr8",
+        "https://www.youtube.com/embed/Z6Ovko1dbSA",
+        "https://www.youtube.com/embed/Z9TH-xPri3U"
+      ];
+
+      window.addEventListener('click', dale);
+
+      function dale() {
+        if (promptGate === false) {
+          prompt = ["oh no."];
+
+          /* HOW DOES TYPEOF WORK? what is an object here? D: */
+          console.log(prompt);
+          console.log("prompt after split() returns an " + typeof prompt);
+
+          promptGate = true;
+          window.removeEventListener('click', dale);
+          window.addEventListener('mousemove', dale);
+        } else {
+            if (cont < 5) {
+            prompt.splice(Math.floor(Math.random()*prompt.length), 0, caos[Math.floor(Math.random()*caos.length-1)])
+            cont++;
+          } else {
+            var i = Math.floor(Math.random()*iVid.length);
+            prompt.splice(Math.floor(Math.random()*prompt.length), 0, '<iframe width="140" height="80" src="'+iVid[i]+'?autoplay=1" frameborder="0"></iframe>');
+            cont = 0;
+          }
+        }
+
+        document.getElementById("prompt").innerHTML = prompt.join(" ");
+      }
+    </script>
+  </head>
+
+  <body>
+    <p id="prompt">ok, just stay calm. you can do this, it will be fine.</p>
+  </body>
+
+</html>
