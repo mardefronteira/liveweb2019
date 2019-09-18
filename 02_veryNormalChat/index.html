@@ -1,0 +1,118 @@
+<html>
+
+	<head>
+		<meta charset="iso-8859-1">
+		<meta title="chat!">
+
+		<style>
+			html {
+				overflow: hidden;
+				height: 100%;
+			}
+			body {
+				margin: 3em;
+				background-color: firebrick;
+				font: 1em Verdana, serif;
+				color: lightpink;
+			}
+			input {
+				background-color: firebrick;
+				color: lightpink;
+			}
+			#send {
+				width: 10%;
+				border: 1px solid white;
+				background-color: rgba(255, 255, 255, 0.1);
+			}
+			#message {
+				width: 75%;
+				border: 1px solid white;
+				background-color: rgba(255, 255, 255, 0.1);
+			}
+			#messages {
+				height: 85%;
+				padding: 1em;
+				overflow: auto;
+				background-color: rgba(255, 255, 255, 0.1);
+				border: 1px solid white;
+				margin-bottom: 0.5em;
+			}
+			div {
+				color: lightpink;
+				font: 1em Verdana, serif;
+				width: 80%;
+				height: 80%;
+			}
+		</style>
+
+		<script type="text/javascript" src="/socket.io/socket.io.js"></script>
+
+		<script type="text/javascript">
+
+			var iceBroken = false;
+			var socket = io.connect();
+
+			socket.on('connect', function() {
+				console.log("Connected");
+			});
+
+			// Receive from any event
+			socket.on('chatmessage', function (data) {
+				iceBreaker();
+				console.log('their message: ',data);
+				document.getElementById('messages').innerHTML += "them: " + data + "<br>";
+			});
+
+			var sendmessage = function(message) {
+				iceBreaker();
+				console.log("your message: " + message);
+				socket.emit('chatmessage', message);
+				document.getElementById('messages').innerHTML += "you: " + message + "<br>";
+				// document.getElementById('messages').innerHTML = "you: " + message + "<br>" + document.getElementById('messages').innerHTML;
+
+				document.getElementById('message').value = "";
+			};
+
+			function iceBreaker() {
+				if (iceBroken == false) {
+					document.getElementById('messages').innerHTML = "";
+					iceBroken = true;
+				}
+			}
+
+
+			window.addEventListener("load", function() {
+				document.getElementById('message').addEventListener("keyup", function(event) {
+					if (event.key === "Enter"){
+						sendmessage(document.getElementById('message').value);
+					}
+				});
+			});
+
+
+		</script>
+	</head>
+
+ <body>
+	 <div>
+		<div id="messages">
+			...
+		</div>
+	 	<input type="text" id="message" name="message">
+	 	<input type="submit" id="send" value="send" onclick="sendmessage(document.getElementById('message').value);">
+	</div>
+ </body>
+</html>
+
+<!--
+• see my own messages X
+• add usernames X
+• invert message order X
+• send message when hit return X
+• clear text input when message is sent X
+• add border to chat div X
+• add scrollable box X
+• make box scroll automatically to last message
+• send username only once until the other person says something
+
+</div> -->
