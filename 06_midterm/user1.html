@@ -1,0 +1,68 @@
+<html>
+	<head>
+		<meta charset="utf-8">
+
+		<script type="text/javascript" src="peer.min.js"></script>
+		<script type="text/javascript" src="/socket.io/socket.io.js"></script>
+		<script type="text/javascript">
+			// variable to hold peer id
+			var thisID = 'id1';
+			var theirID = 'id2';
+		</script>
+		<script type="text/javascript" src="media.js"></script>
+		<style>
+		body {
+			margin: 3em;
+			background-color: cadetblue;
+			font: 1em Verdana, serif;
+			color: #376161;
+			text-align: justify;
+		}
+		p {
+			color:#376161;
+		}
+		textarea {
+			background-color: inherit;
+			text-align: center;
+			border: 0.01em solid #376161;
+			color: #376161;
+			font-size: 1.5em;
+			padding: .5em;
+			width: 500px;
+			height: 10%;
+		}
+		button {
+			background-color: inherit;
+			text-align: center;
+			border: 0.01em solid #376161;
+			color: #376161;
+			font-size: 1.5em;
+			padding: .5em;
+		}
+		</style>
+	</head>
+
+	<body>
+		<div id="mainDiv">
+			<section id="videos">
+				<video id="theirVideo" controls width="640" height="480" autoplay></video>
+				<video id="thisVideo" controls width="640" height="480" muted autoplay></video>
+			</section>
+			<section id="control">
+				<textarea id="notes" placeholder="you can use this space to work together on lyrics, or set a key to play in!"></textarea>
+				<br>
+				<canvas id="canvas" height="60px"></canvas>
+				<div id="buttons">
+					<button onclick="displayVideo()" id="mirrorButton">mirror</button>
+					<button id="recButton">rec</button>
+					<button id="stopButton">stop</button>
+				</div>
+			</section>
+
+			<section id="soundClips">
+
+			</section>
+
+		</div>
+	</body>
+</html>
