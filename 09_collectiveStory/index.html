@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script type = "text/javascript">
+
+
+    var socket = io.connect();
+      socket.on('connect', function(){
+        console.log("Connected");
+      })
+
+//receive a Message
+    var currentStory = null;
+    var name = null;
+    var description = null;
+    var who = null;
+    var what = null;
+    var why = null;
+    var newStory = false;
+
+    socket.on('nextStory', function(data){
+       console.log('nextStory: ',data);
+       document.getElementById("newStories").innerHTML += data;
+         currentStory = data;
+         whereName =  currentStory.where.name;
+         whereDescription =  currentStory.where.description;
+         who = currentStory.who;
+         what = currentStory.what;
+         why = currentStory.why;
+         // var complete = currentStory.complete;
+
+         document.getElementById("newStories").write = whereDescription + who + what + why;
+         newStory = true;
+    });
+
+// var event;
+        var story = {
+          creator: null,
+          where: {
+            name: null,
+            description: null
+          },
+          who: null,
+          what: null,
+          why: null,
+          complete: null,
+          users: null
+        };
+
+
+        var prompts = ["choose a place", "describe the scene", "who is our character?", "what are they doing?", "why are they doing that?", "here are all the stories", "waiting for your friends"];
+        var username = prompt("what's your name?");
+        var scene = null;
+        var promptElement;
+        var submitButtonElement;
+        var userInputElement;
+
+        window.addEventListener('load', () => {
+          console.log('username: ', username);
+          socket.emit('setUsername', username);
+          placeScene();
+        });
+
+
+        // scenes functions
+        function placeScene() {
+          promptElement = document.getElementById('prompt');
+          submitButtonElement = document.getElementById('submitButton');
+          userInputElement = document.getElementById('userInput');
+
+          scene = 'place';
+          userInputElement.placeholder = prompts[0];
+        }
+
+        function placeDescriptionScene() {
+          scene = 'placeDescription';
+          if (newStory == false) {
+            waitingScene();
+          } else {
+            userInputElement.placeholder = prompts[1];
+            document.getElementById("newStoryPart").innerHTML = whereName +', ' ;
+            newStory = false;
+          }
+        }
+
+        function characterScene() {
+          scene = 'character';
+          if (newStory == false) {
+            waitingScene();
+          } else {
+            userInputElement.placeholder = prompts[2];
+            document.getElementById("newStoryPart").innerHTML += whereDescription+'.'+ ' A ';
+            newStory = false;
+          }
+        }
+
+        function actionScene() {
+          scene = 'action';
+          if (newStory == false) {
+            waitingScene();
+          } else {
+            userInputElement.placeholder = prompts[3];
+            document.getElementById("newStoryPart").innerHTML += who +' is ';
+            newStory = false;
+          }
+        }
+
+        function reasonScene() {
+          scene = 'reason';
+          if (newStory == false) {
+            waitingScene();
+          } else {
+            userInputElement.placeholder = prompts[4];
+            document.getElementById("newStoryPart").innerHTML += what +' because ';
+            newStory = false;
+          }
+        }
+
+        function completeStoriesScene() {
+          scene = 'completeStories';
+          if (newStory == false) {
+            waitingScene();
+          } else {
+            userInputElement.placeholder = prompts[5];
+            document.getElementById("newStoryPart").innerHTML += why;
+            newStory = false;
+          }
+          console.log(story);
+        }
+        function ifStoryNew() {
+          if (newStory == true) {
+            if (pScene == 'place') placeScene();
+            if (pScene == 'placeDescription') placeDescriptionScene();
+            if (pScene == 'character') characterScene();
+            if (pScene == 'action') actionScene();
+            if (pScene == 'reason') reasonScene();
+            if (pScene == 'completeStories') completeStoriesScene();
+            clearInterval(timer);
+          }
+        }
+
+        function waitingScene() {
+          var pScene = scene;
+          var timer = setInterval(ifStoryNew, 1000);
+          scene = 'waiting';
+          promptElement.innerHTML = "waiting...";
+        }
+
+
+        //When User Submit
+        function sendInput () {
+
+          if (userInput.value != '') {
+            console.log('scene: ', scene);
+
+            if (scene == 'place') {
+                story.where.name = userInputElement.value;
+                console.log('place: ', story.where.name);
+                socket.emit("newPlace", story.where.name);
+                placeDescriptionScene();
+
+            } else if (scene == 'placeDescription') {
+                story.where.description = userInputElement.value;
+                console.log('description: ', story.where.description);
+                socket.emit("newDescription", story.where.description);
+                characterScene();
+
+            } else if (scene == 'character'){
+                story.who = userInputElement.value;
+                console.log('chatacter: ', story.who);
+                socket.emit("newCharacter", story.who);
+                actionScene();
+
+            } else if (scene == 'action'){
+                story.what = userInputElement.value;
+                console.log('action: ', story.what);
+                socket.emit("newAction", story.what);
+                reasonScene();
+
+            } else if (scene == 'reason'){
+                story.why = userInputElement.value;
+                console.log('reason: ', story.why);
+                socket.emit("newReason", story.why);
+                completeStoriesScene();
+            }
+            // else if (scene == 'waiting'){
+            //     console.log('waiting...');
+            //     //waitingScene();
+            // }
+            userInput.value = '';
+          }
+        }
+        function enterPressed(event){
+            if(event.key == "Enter"){
+                sendInput();
+                return false;
+            }
+        }
+     </script>
+     <style media="screen">
+       body {
+           font-size: 14px;
+           font-family: Georgia, 'Times New Roman', Times, serif;
+           text-align: center;
+
+       }
+       #title {
+         margin-top:40px;
+           font-size: 2rem;
+       }
+       #newStoryPart {
+           margin-top: 20px;
+           font-size: 1.5rem;
+
+       }
+       #newStories {
+         margin: 30px;
+               font-size: 4rem;
+       }
+
+       .inputs {
+         margin: 10px;
+
+       }
+
+       #userInput {
+         margin-top: 40px;
+           outline: 0;
+           border: 0;
+           background: transparent;
+           border-bottom: 1px dashed black;
+
+       }
+       #submitButton {
+           margin-top: 10px;
+           border-radius: 10%;
+       }
+     </style>
+  </head>
+
+  <body>
+    <h1 name="title" id="title">Collective Story Thing</h1>
+    <p name="prompt" id="prompt"></p>
+
+    <input type="text" class="inputs" id="userInput" size="40" placeholder="" onfocus="this.placeholder=''" onblur="this.placeholder=''" onkeyup="enterPressed(event)" >
+  </br><input type="submit" class="inputs" id="submitButton" value="submit" onclick = "sendInput()">
+    <div id="newStoryPart"></div>
+    <div id="newStories"></div>
+</body>
+
+</html>
