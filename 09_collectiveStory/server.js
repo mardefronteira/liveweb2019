@@ -64,51 +64,60 @@ io.sockets.on('connection',
     var currentScene;
 
     function getnextStory(thisScene) {
-      thisScene=currentScene;
+      currentScene = thisScene;
       participatingStories.push(clients[nextStoryIndex]);
       console.log(username, "'s participating stories: ", participatingStories);
 
-      if (nextStoryIndex >= clients.length) {
+      if (nextStoryIndex >= clients.length - 1) {
         nextStoryIndex = 0;
       } else {
         nextStoryIndex++;
       }
       console.log("next story's creator: " + nextStoryIndex, clients[nextStoryIndex]);
-      var setTimeout(checkNextStory,1000);
-      console.log('nextStory: ',nextStory);
+			checkNextStory()
+
     }
 
 
       function checkNextStory() {
         console.log('checking story for ', username)
-        db.find({username: clients[nextStoryIndex]}, function (err, docs) {
-          nextStory = docs;
+        db.find({creator: clients[nextStoryIndex]}, function (err, docs) {
+          nextStory = docs[0];
+					console.log(clients[nextStoryIndex]);
+					console.log(docs);
+					console.log(nextStory);
+
+					if(nextStory != null) {
+	          if (currentScene == 'place') nextObject = nextStory.where.name;
+	          if (currentScene == 'placeDescription') nextObject = nextStory.where.description;
+	          if (currentScene == 'character') nextObject = nextStory.who;
+	          if (currentScene == 'action') nextObject = nextStory.what;
+	          if (currentScene == 'reason') nextObject = nextStory.why;
+
+	          if (nextObject == null) {
+	            socket.emit('waitingUsers', currentScene);
+							console.log(username, " is waiting for ", clients[nextStoryIndex]);
+							setTimeout(checkNextStory,1000);
+	          } else {
+	            socket.emit('nextStory', nextStory);
+	            console.log("sent ", nextStory, " to ", username);
+	            participatingStories.push(clients[nextStoryIndex]);
+	            console.log(username,"'s participatingStories: ", participatingStories);
+	          }
+	      	}
         });
 
-        if(nextStory != null) {
-          if (currentScene == 'place') nextObject = nextStory.where.name;
-          if (currentScene == 'placeDescription') nextObject = nextStory.where.description;
-          if (currentScene == 'character') nextObject = nextStory.who;
-          if (currentScene == 'action') nextObject = nextStory.what;
-          if (currentScene == 'reason') nextObject = nextStory.why;
 
-          if (nextObject == null) {
-            socket.emit('waitingUsers', currentScene);
-          } else {
-            socket.emit('nextStory', nextStory);
-            console.log("sent ", nextStory, " to ", username);
-            participatingStories.push(clients[nextStoryIndex]);
-            console.log(username,"'s participatingStories: ", participatingStories);
-          }
-      }
     }
 
     socket.on('setUsername', (data) => {
       username = data;
       console.log(socket.id, ' = ', username);
+			socket.username = username;
 
       var story = {
-        creator: username,
+				creator: socket.id,
+        // creator: username,
         where: {
          name: null,
          description: null
@@ -119,8 +128,8 @@ io.sockets.on('connection',
         users: [username]
       };
 
-      clients.push(username);
-      nextStoryIndex = clients.indexOf(username);
+      clients.push(socket.id);
+      nextStoryIndex = clients.indexOf(socket.id);
       console.log("clients: ", clients);
       console.log("this client's index: ", nextStoryIndex);
 
@@ -143,7 +152,7 @@ io.sockets.on('connection',
     // When this user emits, client side: socket.emit('otherevent',some data);
     socket.on('newDescription', function(data) {
       console.log('received '+ data +' from ' + username);
-      db.update({creator: clients[clients.indexOf(username)+1]}, {$set: {where: { description: data}}},{}, function(err, lastVal) {
+      db.update({creator: clients[clients.indexOf(socket.id)+1]}, {$set: {where: { description: data}}},{}, function(err, lastVal) {
         // console.log("error: ", err);
         // console.log("lastVal: " + lastVal);
         console.log("newPlaceDescription: " + data);
@@ -190,7 +199,7 @@ io.sockets.on('connection',
 
 		socket.on('disconnect', function() {
 			console.log("Client has disconnected " + username);
-      clients.splice(clients.indexOf(username));
+      clients.splice(clients.indexOf(socket.id));
       console.log(clients);
 		});
 

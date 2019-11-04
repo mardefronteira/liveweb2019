@@ -24,7 +24,7 @@
 
     socket.on('nextStory', function(data){
        console.log('nextStory: ',data);
-       document.getElementById("newStories").innerHTML += data;
+       // document.getElementById("newStories").innerHTML += data;
          currentStory = data;
          whereName =  currentStory.where.name;
          whereDescription =  currentStory.where.description;
@@ -33,7 +33,7 @@
          why = currentStory.why;
          // var complete = currentStory.complete;
 
-         document.getElementById("newStories").write = whereDescription + who + what + why;
+         document.getElementById("newStories").innerHTML = ""+whereName+whereDescription + who + what + why;
          newStory = true;
     });
 
