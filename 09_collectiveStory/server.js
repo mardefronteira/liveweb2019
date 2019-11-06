@@ -173,9 +173,19 @@ io.sockets.on('connection',
     //   });
     //   getnextStory("place");
 		// });
+		function trim () {
+    return this.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
+  };
 
 		socket.on('newPlace', function(data) {
 				console.log('received '+ data +' from ' + username);
+				data=data.trim();
+				console.log("|",data,"|",data[-1]);
+				if (data.slice(-1) == '.' || data.slice(-1) == ',') {
+					console.log('slice 0, -1:',data.slice(0,-1));
+					data = data.slice(0,-1);
+
+				}
 	      db.update({creator: clients[nextStoryIndex]}, {$set: {whereName: data}},{}, function(err, lastVal) {
 	        // console.log("error: ", err);
 	        console.log("newPlace for story "+nextStoryIndex+": " + data);
@@ -236,7 +246,16 @@ io.sockets.on('connection',
 // 			console.log(username+"'s stories: "+thisStories);
 			db.find({}, (err, docs) =>
 			{
-				socket.emit('clientStories', docs);
+				var toSend =[];
+				// console.log(docs.length);
+				for (var i = 0; i < docs.length; i++ ){
+					// console.log(docs[i]);
+					if (docs[i].why != null) {
+						toSend.push(docs[i]);
+					}
+				}
+				socket.emit('clientStories', toSend);
+				// console.log(docs);
 			});
 
     });
