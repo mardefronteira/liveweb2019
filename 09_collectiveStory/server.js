@@ -48,15 +48,20 @@ var db = new Datastore({filename:"data.db", autoload:true});
 
 var clients = [];
 
+// db.remove({},{multi:true}, function(err,numDeleted){
+// 	console.log('deleted ',numDeleted,'stories');
+// });
+
 
 // Register a callback function to run when we have an individual connection
 // This is run for each individual user that connects
 io.sockets.on('connection',
 	// We are given a websocket object in our function
 	function (socket) {
+
 		console.log("We have a new client: " + socket.id);
 
-// Variables for each user
+		//variables for each client
     var username;
     var participatingStories = [];
     var nextStoryIndex;
@@ -65,45 +70,54 @@ io.sockets.on('connection',
     var updatedStory = true;
     var currentScene;
 
-// Function to ask for the story after each submitted information
     function getnextStory(thisScene) {
 
-// Do we need to store the scene?
-      //currentScene = thisScene;
+      currentScene = thisScene;
 
-      
       if (nextStoryIndex >= clients.length - 1) {
         nextStoryIndex = 0;
       } else {
         nextStoryIndex++;
       }
-      console.log("next story's creator: "+ nextStoryIndex, clients[nextStoryIndex]);
-      checkNextStory();
+      // console.log("next story's creator: " + nextStoryIndex, clients[nextStoryIndex]);
+			checkNextStory();
 
     }
 
 
       function checkNextStory() {
-        console.log('checking story for ', username)
+				// Find next story in the database
+        console.log('checking story for ', username);
         db.find({creator: clients[nextStoryIndex]}, function (err, docs) {
           nextStory = docs[0];
-	  console.log(clients[nextStoryIndex]);
-	  console.log(docs);
+					// console.log(clients[nextStoryIndex]);
+					// console.log(docs);
 
-	  if(nextStory != null) {
-	    if (currentScene == 'place') nextObject = nextStory.where.name;
-	    if (currentScene == 'placeDescription') nextObject = nextStory.where.description;
-	    if (currentScene == 'character') nextObject = nextStory.who;
-	    if (currentScene == 'action') nextObject = nextStory.what;
-	    if (currentScene == 'reason') nextObject = nextStory.why;
+					// Check if the story has been created
+					if(nextStory != null) {
+						// Assign the next part of the story to the nextObject variable
+	          if (currentScene == 'place') nextObject = nextStory.whereName;
+	          if (currentScene == 'placeDescription') nextObject = nextStory.whereDescription;
+	          if (currentScene == 'character') nextObject = nextStory.who;
+	          if (currentScene == 'action') nextObject = nextStory.what;
+	          if (currentScene == 'reason') nextObject = nextStory.why;
 
-	    if (nextObject == null) {
+						// Check if the user has submitted the part of the story that we are waiting for
+
+	          if (nextObject == null) {
+							// If story is incomplete
+							// Tell client that we are waiting for user input
 	            socket.emit('waitingUsers', currentScene);
-		    console.log(username, " is waiting for ", clients[nextStoryIndex]);
-		    setTimeout(checkNextStory,1000);
-	    } else {
+							console.log(username, " is waiting for ", clients[nextStoryIndex]);
+
+							// Check story again every second
+							setTimeout(checkNextStory,1000);
+	          } else {
+							// If story is complete, send it to the client
 	            socket.emit('nextStory', nextStory);
 	            console.log("sent ", nextStory, " to ", username);
+
+							// Add received story to participatingStories list
 	            participatingStories.push(clients[nextStoryIndex]);
 	            console.log(username,"'s participatingStories: ", participatingStories);
 	          }
@@ -113,93 +127,134 @@ io.sockets.on('connection',
 
     }
 
+		/* When client inserts username */
     socket.on('setUsername', (data) => {
+			// Assign username to global variable
       username = data;
-      console.log(socket.id, ' = ', username);
-	socket.username = username;
+      // console.log(socket.id, ' = ', username);
+			// socket.username = username;
 
+			// Create story object to be saved in the database
       var story = {
-	creator: socket.id,
-        // creator: username,
-        where: {
-         name: null,
-         description: null
-        },
+				// Add this user's socket id as the creator, push their username into the
+				// authors list, set all other variables to null
+				creator: socket.id,
+        whereName: null,
+        whereDescription: null,
         who: null,
         what: null,
         why: null,
-        users: [username]
+        authors: [username]
       };
 
+			// Push client's id to clients array
       clients.push(socket.id);
+
+			// Set starting story index to the client's own index
       nextStoryIndex = clients.indexOf(socket.id);
       console.log("clients: ", clients);
-      console.log("this client's index: ", nextStoryIndex);
+      // console.log("this client's index: ", nextStoryIndex);
 
+			// Insert sroty into database
       db.insert(story, function(err, lastVal) {
         // console.log("error: ", err);
         // console.log("lastVal: " + lastVal);
         console.log('saved ',story,' to database.')
       });
     });
-    // When this user emits, client side: socket.emit('otherevent',some data);
+
+
+		// Functions for new information coming from the client
+		// socket.on('newPlace', function(data) {
+		// 	console.log('received '+ data +' from ' + username);
+    //   db.update({creator: clients[nextStoryIndex]}, {$set: {where: {name: data, description: null}}},{}, function(err, lastVal) {
+    //     // console.log("error: ", err);
+    //     console.log("newPlace for story "+nextStoryIndex+": " + data);
+    //   });
+    //   getnextStory("place");
+		// });
+
 		socket.on('newPlace', function(data) {
-			console.log('received '+ data +' from ' + username);
-      db.update({creator: clients[nextStoryIndex]}, {$set: {where: {name: data}}},{}, function(err, lastVal) {
-        // console.log("error: ", err);
-        // console.log("lastVal: " + lastVal);
-        console.log("newPlace: " + data);
-      });
-      getnextStory("place");
-		});
-    // When this user emits, client side: socket.emit('otherevent',some data);
+				console.log('received '+ data +' from ' + username);
+	      db.update({creator: clients[nextStoryIndex]}, {$set: {whereName: data}},{}, function(err, lastVal) {
+	        // console.log("error: ", err);
+	        console.log("newPlace for story "+nextStoryIndex+": " + data);
+	      });
+	      getnextStory("place");
+			});
+
     socket.on('newDescription', function(data) {
       console.log('received '+ data +' from ' + username);
-      db.update({creator: clients[clients.indexOf(socket.id)+1]}, {$set: {where: { description: data}}},{}, function(err, lastVal) {
+			db.update({creator: clients[nextStoryIndex]}, {$set: {whereDescription: data}},{}, function(err, lastVal) {
         // console.log("error: ", err);
-        // console.log("lastVal: " + lastVal);
-        console.log("newPlaceDescription: " + data);
+        console.log("newDescription for story "+nextStoryIndex+": " + data);
       });
+			db.find()
       getnextStory("placeDescription");
     });
-    // When this user emits, client side: socket.emit('otherevent',some data);
+
     socket.on('newCharacter', function(data) {
-      console.log('received '+ data +' from ' + username);
-      db.update({creator: username}, {$set: {who: data}},{}, function(err, lastVal) {
-        // console.log("error: ", err);
-        // console.log("lastVal: " + lastVal);
-        console.log("newCharacter: " + data);
+			console.log('received '+ data +' from ' + username);
+			db.update({creator: clients[nextStoryIndex]}, {$set: {who: data}},{}, function(err, lastVal) {
+				// console.log("error: ", err);
+        console.log("newCharacter for story "+nextStoryIndex+": " + data);
       });
       getnextStory("character");
     });
-    // When this user emits, client side: socket.emit('otherevent',some data);
+
     socket.on('newAction', function(data) {
       console.log('received '+ data +' from ' + username);
-      db.update({creator: username}, {$set: {what: data}},{}, function(err, lastVal) {
+      db.update({creator: clients[nextStoryIndex]}, {$set: {what: data}},{}, function(err, lastVal) {
         // console.log("error: ", err);
-        // console.log("lastVal: " + lastVal);
-        console.log("newAction: " + data);
+        console.log("newAction for story "+nextStoryIndex+": " + data);
       });
       getnextStory("action");
     });
-    // When this user emits, client side: socket.emit('otherevent',some data);
+
     socket.on('newReason', function(data) {
       console.log('received '+ data +' from ' + username);
-      db.update({creator: username}, {$set: {why: data}},{}, function(err, lastVal) {
+      db.update({creator: clients[nextStoryIndex]}, {$set: {why: data}},{}, function(err, lastVal) {
         // console.log("error: ", err);
-        // console.log("lastVal: " + lastVal);
-        console.log("newReason: " + data);
-      });
+        console.log("newReason for story "+nextStoryIndex+": " + data);
+			});
 
-      db.find({}, function(err, docs) {
-        console.log(err);
-        for (var i = 0; i < docs.length; i++) {
-      		console.log(docs[i]);
-      	}
-      })
+			console.log("full stories of " + username);
+			// participatingStories.forEach(getFullStory);
+// 			var thisStories = [];
+// 			console.log(participatingStories);
+// //---- this is starting at index 3???
+//
+// 			for (var j = 0; j <= participatingStories.length - 1; j++) {
+// 				console.log(j, participatingStories[j]);
+// 				db.find({creator: participatingStories[j]}, function(err, docs) {
+// 					//console.log(err);
+// 					console.log(username+"'s story number "+j+":")
+// 					// console.log(docs[0]);
+// 					thisStories.push(docs[0]);
+// 				});
+// 			}
+// 			console.log(username+"'s stories: "+thisStories);
+			db.find({}, (err, docs) =>
+			{
+				socket.emit('clientStories', docs);
+			});
 
     });
 
+		// function getFullStory(item, index) {
+		// 	console.log("story "+ index +":");
+		// 	db.find({creator: item}, function(err, docs) {
+		// 		console.log(err);
+		// 		console.log(docs[0]);
+		// 	});
+		// }
+
+/*
+		db.find({}, function(err, docs) {
+			console.log(err);
+			console.log(docs);
+		});
+*/
 		socket.on('disconnect', function() {
 			console.log("Client has disconnected " + username);
       clients.splice(clients.indexOf(socket.id));

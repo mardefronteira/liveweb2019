@@ -2,7 +2,7 @@
 <html>
 
   <head>
-
+    <meta charset="utf-8">
 
     <script src="/socket.io/socket.io.js"></script>
     <script type = "text/javascript">
@@ -26,14 +26,14 @@
        console.log('nextStory: ',data);
        // document.getElementById("newStories").innerHTML += data;
          currentStory = data;
-         whereName =  currentStory.where.name;
-         whereDescription =  currentStory.where.description;
+         whereName =  currentStory.whereName;
+         whereDescription =  currentStory.whereDescription;
          who = currentStory.who;
          what = currentStory.what;
          why = currentStory.why;
          // var complete = currentStory.complete;
 
-         document.getElementById("newStories").innerHTML = ""+whereName+whereDescription + who + what + why;
+         //document.getElementById("newStories").innerHTML = ""+whereName+whereDescription + who + what + why;
          newStory = true;
     });
 
@@ -47,8 +47,8 @@
           who: null,
           what: null,
           why: null,
-          complete: null,
-          users: null
+          complete: false,
+          authors: null
         };
 
 
@@ -82,7 +82,7 @@
             waitingScene();
           } else {
             userInputElement.placeholder = prompts[1];
-            document.getElementById("newStoryPart").innerHTML = whereName +', ' ;
+            document.getElementById("newStoryPart").innerHTML = whereName;
             newStory = false;
           }
         }
@@ -93,7 +93,7 @@
             waitingScene();
           } else {
             userInputElement.placeholder = prompts[2];
-            document.getElementById("newStoryPart").innerHTML += whereDescription+'.'+ ' A ';
+            document.getElementById("newStoryPart").innerHTML = whereDescription+".";
             newStory = false;
           }
         }
@@ -104,7 +104,7 @@
             waitingScene();
           } else {
             userInputElement.placeholder = prompts[3];
-            document.getElementById("newStoryPart").innerHTML += who +' is ';
+            document.getElementById("newStoryPart").innerHTML = whereDescription + '.' + who;
             newStory = false;
           }
         }
@@ -115,37 +115,61 @@
             waitingScene();
           } else {
             userInputElement.placeholder = prompts[4];
-            document.getElementById("newStoryPart").innerHTML += what +' because ';
+            document.getElementById("newStoryPart").innerHTML = whereDescription + '.' + who + what;
             newStory = false;
           }
         }
 
+        var allStories;
+        var gotAllStories = false;
         function completeStoriesScene() {
+          console.log("completeStoriesScene");
           scene = 'completeStories';
-          if (newStory == false) {
+
+          socket.on("clientStories", (stories) => {
+            allStories = stories;
+            console.log("got these stories from server: "+ stories);
+            gotAllStories = true;
+          });
+
+          if (gotAllStories == false) {
             waitingScene();
           } else {
-            userInputElement.placeholder = prompts[5];
-            document.getElementById("newStoryPart").innerHTML += why;
-            newStory = false;
+            userInputElement.style.display = "none";
+            submitButtonElement.style.display = "none";
+
+            document.getElementById("newStoryPart").innerHTML = "";
+
+            for (var i = 0; i<allStories.length-1;i++){
+              document.getElementById("newStoryPart").innerHTML += "" + allStories[i].whereDescription +" "+ allStories[i].who +" "+ allStories[i].what +" " + allStories[i].why+"<br>";
+            }
           }
-          console.log(story);
+          // console.log(story);
         }
+
         function ifStoryNew() {
-          if (newStory == true) {
+          if (newStory) {
             if (pScene == 'place') placeScene();
             if (pScene == 'placeDescription') placeDescriptionScene();
             if (pScene == 'character') characterScene();
             if (pScene == 'action') actionScene();
             if (pScene == 'reason') reasonScene();
-            if (pScene == 'completeStories') completeStoriesScene();
-            clearInterval(timer);
+            // if (pScene == 'completeStories') completeStoriesScene();
+            console.log("recalled "+pScene);
+            promptElement.innerHTML = "";
+          } else if (gotAllStories) {
+              completeStoriesScene();
+              console.log("recalled "+pScene);
+              promptElement.innerHTML = "All stories:";
+          } else {
+            setTimeout(ifStoryNew,1000);
           }
         }
 
+        var pScene;
         function waitingScene() {
-          var pScene = scene;
-          var timer = setInterval(ifStoryNew, 1000);
+          pScene = scene;
+          ifStoryNew();
           scene = 'waiting';
           promptElement.innerHTML = "waiting...";
         }
@@ -187,13 +211,12 @@
                 socket.emit("newReason", story.why);
                 completeStoriesScene();
             }
-            // else if (scene == 'waiting'){
-            //     console.log('waiting...');
-            //     //waitingScene();
-            // }
+
             userInput.value = '';
           }
         }
+
+        // Allow return/enter to submit input
         function enterPressed(event){
             if(event.key == "Enter"){
                 sendInput();
