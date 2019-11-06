@@ -55,6 +55,8 @@ io.sockets.on('connection',
 	// We are given a websocket object in our function
 	function (socket) {
 		console.log("We have a new client: " + socket.id);
+
+// Variables for each user
     var username;
     var participatingStories = [];
     var nextStoryIndex;
@@ -63,18 +65,20 @@ io.sockets.on('connection',
     var updatedStory = true;
     var currentScene;
 
+// Function to ask for the story after each submitted information
     function getnextStory(thisScene) {
-      currentScene = thisScene;
-      participatingStories.push(clients[nextStoryIndex]);
-      console.log(username, "'s participating stories: ", participatingStories);
 
+// Do we need to store the scene?
+      //currentScene = thisScene;
+
+      
       if (nextStoryIndex >= clients.length - 1) {
         nextStoryIndex = 0;
       } else {
         nextStoryIndex++;
       }
-      console.log("next story's creator: " + nextStoryIndex, clients[nextStoryIndex]);
-			checkNextStory()
+      console.log("next story's creator: "+ nextStoryIndex, clients[nextStoryIndex]);
+      checkNextStory();
 
     }
 
@@ -83,22 +87,21 @@ io.sockets.on('connection',
         console.log('checking story for ', username)
         db.find({creator: clients[nextStoryIndex]}, function (err, docs) {
           nextStory = docs[0];
-					console.log(clients[nextStoryIndex]);
-					console.log(docs);
-					console.log(nextStory);
+	  console.log(clients[nextStoryIndex]);
+	  console.log(docs);
 
-					if(nextStory != null) {
-	          if (currentScene == 'place') nextObject = nextStory.where.name;
-	          if (currentScene == 'placeDescription') nextObject = nextStory.where.description;
-	          if (currentScene == 'character') nextObject = nextStory.who;
-	          if (currentScene == 'action') nextObject = nextStory.what;
-	          if (currentScene == 'reason') nextObject = nextStory.why;
+	  if(nextStory != null) {
+	    if (currentScene == 'place') nextObject = nextStory.where.name;
+	    if (currentScene == 'placeDescription') nextObject = nextStory.where.description;
+	    if (currentScene == 'character') nextObject = nextStory.who;
+	    if (currentScene == 'action') nextObject = nextStory.what;
+	    if (currentScene == 'reason') nextObject = nextStory.why;
 
-	          if (nextObject == null) {
+	    if (nextObject == null) {
 	            socket.emit('waitingUsers', currentScene);
-							console.log(username, " is waiting for ", clients[nextStoryIndex]);
-							setTimeout(checkNextStory,1000);
-	          } else {
+		    console.log(username, " is waiting for ", clients[nextStoryIndex]);
+		    setTimeout(checkNextStory,1000);
+	    } else {
 	            socket.emit('nextStory', nextStory);
 	            console.log("sent ", nextStory, " to ", username);
 	            participatingStories.push(clients[nextStoryIndex]);
@@ -113,10 +116,10 @@ io.sockets.on('connection',
     socket.on('setUsername', (data) => {
       username = data;
       console.log(socket.id, ' = ', username);
-			socket.username = username;
+	socket.username = username;
 
       var story = {
-				creator: socket.id,
+	creator: socket.id,
         // creator: username,
         where: {
          name: null,
